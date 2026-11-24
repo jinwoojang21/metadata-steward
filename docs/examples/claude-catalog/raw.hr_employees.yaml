@@ -1,0 +1,92 @@
+table: raw.hr_employees
+description: Raw HR employee roster with 60 rows, one per employee (key emp_id). It holds name, work email,
+  security clearance level, hire date, salary and manager (mgr_emp_id, self-referencing hierarchy). It
+  contains direct identifiers and sensitive HR data (salary, clearance), so restrict access.
+description_status: proposed
+columns:
+  emp_id:
+    description: Unique employee identifier (4-digit integer, 5001–5060); primary key of the table, referenced
+      by mgr_emp_id.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - 60 distinct values in 60 rows
+    - range 5001-5060
+    - mgr_emp_id values fall in same range
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  full_name:
+    description: Employee full name in "Last, First" format. Not unique (54 distinct in 60 rows), so don't
+      use as a key.
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - masked samples like 'K***, M***' show Last, First pattern
+    - 54 distinct values across 60 rows
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  work_email:
+    description: Employee's work email address. Mostly unique per employee, but 52 distinct values in
+      60 rows, so some addresses repeat.
+    pii_category: email
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - email detector hit rate 100%
+    - 52 distinct values in 60 rows
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  clearance_lvl:
+    description: 'Employee''s security clearance level: NONE, SECRET, TS (Top Secret) or TS/SCI. Sensitive
+      HR/security attribute.'
+    pii_category: sensitive_employment
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - '4 distinct values: SECRET 22, TS 17, NONE 15, TS/SCI 6'
+    - no nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  hire_dt:
+    description: Date the employee was hired. Calendar date, 59 distinct values in 60 rows.
+    pii_category: quasi_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - DATE type, no nulls
+    - near-unique so can help re-identify combined with other attributes
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  salary_amt:
+    description: Employee's salary amount (currency not stated, likely annual), ranging 66,000–209,000.
+      Sensitive compensation data.
+    pii_category: sensitive_employment
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - DOUBLE values 66000-209000 in round thousands
+    - no nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+  mgr_emp_id:
+    description: emp_id of the employee's manager (self-reference to this table). Null (about 1.7%, one
+      row) for the top-level employee with no manager.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - values 5001-5049 within emp_id range
+    - 34 distinct managers
+    - null rate 1.67%
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:10+00:00'
+proposed_by: claude (claude-sonnet-5-5)

@@ -1,0 +1,97 @@
+table: staging.stg_web_sessions
+description: 'One row per web session (3000 rows, June–Sept 2025), aggregated from raw.web_events by sess_id.
+  It gives session start/end, page-view count, client IP, device UUID and the CRM contact_id where the
+  visitor is known (~41% of sessions). Caveat: every session currently has exactly one event, so page_views
+  is always 1 and session_end equals session_start. Contains IP addresses, device IDs and contact links,
+  so it is personal data and access should be restricted.'
+description_status: proposed
+columns:
+  session_id:
+    description: 'Grain key: 16-character hex web session identifier from raw.web_events.sess_id. Unique
+      per row (3000 sessions), though in the source each session has exactly one event.'
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - 'Lineage: direct rename of raw.web_events.sess_id; consistent with upstream proposal'
+    - 3000 distinct, length 16
+    - Behavioural token linkable to a contact via contact_id on the same row
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  contact_id:
+    description: CRM contact identifier of the identified visitor (max over the session's events); NULL
+      for anonymous sessions (~59%). 386 distinct contacts across 1243 identified sessions.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.75
+    evidence:
+    - 'SQL: max(e.contact_id)'
+    - null rate 0.5857, 386 distinct, range 1-400
+    - Upstream raw.web_events.contact_id classified pseudonymized_identifier; joins to CRM contact
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  session_start:
+    description: Timestamp of the earliest event in the session (min evt_ts); data spans June–Sept 2025.
+      Timezone undocumented.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - 'SQL: min(e.evt_ts)'
+    - 2999 distinct values, 2025-06 to 2025-09
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  session_end:
+    description: Timestamp of the latest event in the session (max evt_ts). Currently always equals session_start
+      because every session has a single event, so session duration is zero and not meaningful.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - 'SQL: max(e.evt_ts)'
+    - 'Query: 0 of 3000 rows have session_end > session_start'
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  page_views:
+    description: Number of events (page views) recorded in the session, from count(*). Always 1 in current
+      data because each session_id has only one raw event, so it carries no engagement signal yet.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 'SQL: count(*)'
+    - 'Query: all 3000 rows have page_views = 1'
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  ip_address:
+    description: IPv4 address of the client for the session (any_value of the event IPs; arbitrary if
+      a session had several). Unique per row.
+    pii_category: ip_address
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - ipv4 detector hit rate 1.0
+    - 3000 distinct
+    - 'SQL: any_value(e.ip); upstream classified ip_address'
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+  device_id:
+    description: UUID of the client device for the session (any_value over events). Unique per row in
+      this extract, so it doesn't currently link repeat visits, but it is a persistent-device-style identifier.
+    pii_category: device_id
+    sensitivity: restricted
+    confidence: 0.9
+    evidence:
+    - uuid detector hit rate 1.0, length 36
+    - 3000 distinct
+    - Upstream raw.web_events.device_id classified device_id
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:49+00:00'
+proposed_by: claude (claude-sonnet-5-5)

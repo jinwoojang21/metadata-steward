@@ -1,0 +1,101 @@
+table: raw.web_events
+description: Raw web clickstream events (3000 rows, one per event, June–Sept 2025). Each row records a
+  page view with session id, client IP, user-agent, device UUID, URL path and timestamp. About 41% of
+  events are linked to a CRM contact via contact_id; the rest are anonymous. Contains IP addresses and
+  device IDs, so it is personal data and should be access-restricted.
+description_status: proposed
+columns:
+  evt_id:
+    description: Surrogate key for a web event; one row per event (unique, 2–3000).
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 3000 distinct in 3000 rows, integer sequence
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  sess_id:
+    description: 16-character hex web session identifier. Unique per row in this table (3000 distinct),
+      so effectively one session per event; can be linked to the event's user via contact_id when known.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - fixed length 16 hex-like tokens, 3000 distinct
+    - random token not derived from visible personal data; behavioural identifier linkable to contacts
+      through the row
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  contact_id:
+    description: Foreign key to raw.crm_contacts.contact_id for the identified visitor; NULL (~59% of
+      rows) for anonymous events. Covers 386 distinct contacts.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.75
+    evidence:
+    - All 1243 non-null values match a crm_contacts contact_id (0 orphans)
+    - null rate 0.5857, 386 distinct, range 2–400
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  ua_str:
+    description: Browser user-agent string; only 4 values (Mac, Windows, iPhone, Android), indicating
+      a coarse OS/device-type classification.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.8
+    evidence:
+    - 4 distinct generic values, roughly evenly distributed
+    - no version/fingerprint detail
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  ip:
+    description: IPv4 address of the client that generated the event; unique per row.
+    pii_category: ip_address
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - ipv4 detector hit rate 1.0
+    - 3000 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  url_path:
+    description: 'Site page path requested (7 values: /, /products, /search, /help, /cart, /account, /checkout).
+      Contains no query string.'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 7 distinct values, max length 9, no query parameters
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  evt_ts:
+    description: Timestamp when the event occurred; data spans roughly June–September 2025. Timezone not
+      documented.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - TIMESTAMP, min 2025-06, max 2025-09
+    - 2999 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+  device_id:
+    description: UUID identifying the client device that generated the event. Unique per row in this extract,
+      so it doesn't currently link repeat visits, but it is a persistent-device-style identifier.
+    pii_category: device_id
+    sensitivity: restricted
+    confidence: 0.9
+    evidence:
+    - uuid detector hit rate 1.0, length 36
+    - 3000 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:53+00:00'
+proposed_by: claude (claude-sonnet-5-5)

@@ -1,0 +1,96 @@
+table: mart.fct_orders
+description: Order fact table with one row per customer order (1,500 rows), built from staging.stg_orders.
+  It holds order id, a hashed customer key (MD5 of the contact id), order date, amount in USD (fixed-rate
+  conversion upstream), a system-generated order reference that looks like an SSN but is not one, a flag
+  for whether a note exists, and an optional promo code. Free-text notes and IP addresses are not carried
+  over. The customer key remains a pseudonymized identifier and can be re-identified by joining.
+description_status: proposed
+columns:
+  order_id:
+    description: Unique order identifier; grain of the table (one row per order). Six-digit integer 100001–101500.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - 1500 distinct over 1500 rows, no nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  customer_key:
+    description: 'Pseudonymous customer key: MD5 hash (32 hex chars) of the staging contact_id. Lets analysts
+      count and group orders per customer (~392 distinct customers) without exposing the contact id. Because
+      the hash of a small integer id is easily reversed or joined, treat it as re-identifiable.'
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.93
+    evidence:
+    - 'Model SQL: md5(CAST(contact_id AS VARCHAR))'
+    - Upstream contact_id classified as pseudonymized_identifier
+    - 392 distinct values, length 32
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  order_date:
+    description: Calendar date on which the order was placed (about 562 distinct dates, no nulls).
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - DATE type, 0% nulls, passthrough from staging
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  amount_usd:
+    description: Order amount in USD. Upstream converts EUR and GBP with fixed rates (1.08, 1.27); other
+      currencies are passed through unconverted. Range about 3.64–830.32; values are unrounded, so some
+      have more than two decimals.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - Upstream stg_orders catalog entry describes fixed-rate conversion
+    - min 3.64, max 830.32
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  order_ref:
+    description: 'System-generated order reference formatted like 999-99-9999. Despite the SSN-like shape
+      it is not a government ID: the last segment is the sequence order_id minus 100000 for all rows,
+      and the first two segments have only 5 and 40 distinct values. Unique per order. Passed through
+      from source ref_code.'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - Last segment = order_id-100000 in 1500/1500 rows
+    - 5 distinct first segments, 40 distinct middle segments
+    - 'Lineage: raw.orders_ext.ref_code, no transformation'
+    - Consistent with upstream stg_orders entry
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  has_notes:
+    description: True if the order has a free-text note upstream (order_notes is not null); about 63%
+      of orders. The note text itself, which may contain PII, is not carried into this table.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.92
+    evidence:
+    - 'Model SQL: order_notes IS NOT NULL'
+    - True 944, False 556
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+  promo_code:
+    description: 'Promotion code applied to the order: SPRING25, WELCOME10 or VIP. Null (about 41%) means
+      no promotion was used.'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - '3 distinct values: SPRING25 309, WELCOME10 294, VIP 280'
+    - 41% null
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:36+00:00'
+proposed_by: claude (claude-sonnet-5-5)

@@ -1,0 +1,54 @@
+table: mart.agg_daily_revenue
+description: Daily revenue rollup for finance dashboards, built from mart.fct_orders. One row per order_date
+  with order count, total revenue in USD and distinct customer count. Contains aggregates only, no personal
+  data. Days without orders have no row.
+description_status: proposed
+columns:
+  order_date:
+    description: Calendar date on which the orders were placed; grain of the table (one row per date that
+      has at least one order). Days with no orders are absent.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - GROUP BY f.order_date from mart.fct_orders
+    - 562 rows, 562 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:45+00:00'
+  order_count:
+    description: Number of orders placed on the date (count of fct_orders rows). Range 1-9 per day.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - count(*) in model SQL
+    - profile min 1 max 9
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:45+00:00'
+  revenue_usd:
+    description: Total order revenue for the date in US dollars (sum of fct_orders.amount_usd). Floating
+      point, so may show unrounded decimals; treat as approximate to the cent.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.93
+    evidence:
+    - sum(f.amount_usd) in model SQL
+    - profile range 10.34 to 1244.60
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:45+00:00'
+  unique_customers:
+    description: Number of distinct customers (by customer_key) who placed orders on the date. Aggregate
+      count only; no customer identifiers are exposed. Not additive across days.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.93
+    evidence:
+    - count(DISTINCT f.customer_key) in model SQL
+    - profile range 1-9
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:45+00:00'
+proposed_by: claude (claude-sonnet-5-5)

@@ -97,13 +97,44 @@ metadata-steward evals --agent claude --qa     # manual CI job (needs ANTHROPIC_
 
 ### Results
 
-_Claude results will be added after the first manual eval run._
+PII classification across all 81 columns:
 
-Rule-based baseline (column-name patterns + regex detectors):
-
-| columns | category accuracy | PII precision | PII recall | PII F1 | FP | FN | hard columns |
+| investigator | category accuracy | PII precision | PII recall | PII F1 | FP | FN | hard columns |
 |---|---|---|---|---|---|---|---|
-| 81 | 89% | 90% | 85% | 0.88 | 3 | 5 | **0/9** |
+| **Claude** (`claude-sonnet-5-5`), run 2 | **99%** | **100%** | **100%** | **1.00** | 0 | 0 | **9/9** |
+| **Claude**, run 1 | 98% | 97% | 100% | 0.98 | 1 | 0 | 8/9 |
+| Rule-based baseline (name patterns + regex) | 89% | 90% | 85% | 0.88 | 3 | 5 | 0/9 |
+
+Lineage Q&A (exact column set): **5/5** on run 2, **4/5** on run 1. On run 1 the question asked
+for *mart* columns only, and Claude also listed the raw and staging columns.
+
+Cost: about 150 tool calls and 200k input / 30k output tokens to document the whole warehouse,
+roughly 15 tool calls per table.
+
+**The baseline misses all 9 hard columns.** It misses the DOB in `c3`, the PII in the free-text notes
+and the HR-sensitive fields. It flags the SSN-shaped `ref_code` as an SSN in three tables and calls
+`email_domain` an email. Claude handled these by checking the evidence:
+
+- **`ref_code`**: *"unique per row (1500 distinct) while order contact_id repeats, so it is not a
+  per-person identifier… the last segment… is a sequential counter."* Classified `none` at 0.6
+  confidence, flagged for the source owner to confirm. In run 1 it saw the same signals but chose
+  to *"treat as SSN until proven otherwise"*. That's a conservative call that counts as a miss.
+- **`c3`**: *"All 400 values parse as YYYYMMDD with years between 1930 and 2010… not the
+  record-creation date: created_ts is a separate column"* → `date_of_birth`.
+- **`notes`**: ran an aggregate query, found 57 rows containing `@` → `free_text_may_contain_pii`.
+
+The full catalog Claude proposed is in [`docs/examples/CATALOG.md`](docs/examples/CATALOG.md),
+with the raw YAML in [`docs/examples/claude-catalog/`](docs/examples/claude-catalog/).
+
+The evidence isn't always right. In run 2, Claude cleared `ref_code` correctly but also claimed
+*"no correlation with ord_id"*, when the suffix is in fact `ord_id − 100000`. That's why every
+entry is a proposal until a person approves it.
+
+### Found by the evals
+
+On run 1, the model once sent `evidence` as a single string instead of a list, and the catalog
+stored it one character per item. `propose_column` now rejects anything that isn't a list of
+strings and sends the error back to the model, which then resubmits. A regression test covers this.
 
 ## Project layout
 

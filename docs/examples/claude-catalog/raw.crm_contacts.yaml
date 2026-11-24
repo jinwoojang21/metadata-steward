@@ -1,0 +1,132 @@
+table: raw.crm_contacts
+description: 'Raw CRM contact extract with one row per contact (400 rows), combining records from HubSpot
+  and Salesforce (src_sys). It holds direct identifiers: name, email, phone, date of birth (in the cryptically
+  named c3), SSN-format tax_id and street address with ZIP. Treat the whole table as highly sensitive.
+  Column names are abbreviated, and the phone number is stored as a number.'
+description_status: proposed
+columns:
+  contact_id:
+    description: Unique surrogate identifier of the CRM contact record (1–400, one row per contact).
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 400 distinct of 400 rows, sequential integers 1-400
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  frst_nm:
+    description: Contact's first name as entered in the source CRM.
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - Name abbreviation 'frst_nm'; masked capitalised words 3-6 chars, 40 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  lst_nm:
+    description: Contact's last name (surname) as entered in the source CRM.
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - Name abbreviation 'lst_nm'; masked capitalised words, 20 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  eml_addr:
+    description: Contact's email address. Null for about 3.5% of contacts; nearly unique per contact.
+    pii_category: email
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - Email detector hit rate 100% on non-null values
+    - null rate 0.035, 386 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  ph_num:
+    description: Contact's 10-digit phone number stored as a BIGINT (no formatting; leading zeros and
+      country code are not preserved).
+    pii_category: phone
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - Phone detector hit rate 100%
+    - all values 10 digits, 400 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  c3:
+    description: Contact's date of birth stored as a yyyymmdd string. The column name is uninformative.
+      Birth years span 1950–2004.
+    pii_category: date_of_birth
+    sensitivity: restricted
+    confidence: 0.8
+    evidence:
+    - Date detector yyyymmdd 100% hit rate
+    - year range 1950-2004 (55 distinct years), plausible adult birth years, unlike created_ts which spans
+      2024-2025
+    - 394 distinct values over 400 rows
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  tax_id:
+    description: Contact's US taxpayer identification number (SSN format NNN-NN-NNNN), unique per contact.
+      Highly sensitive; restrict access and mask.
+    pii_category: government_id
+    sensitivity: restricted
+    confidence: 0.92
+    evidence:
+    - SSN-shape detector 100%
+    - 400 distinct values, 290 distinct area prefixes (not a low-cardinality code)
+    - no values with invalid 000/666/9xx areas
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  addr_line1:
+    description: Street address line 1 (house number and street name) of the contact.
+    pii_category: street_address
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - Masked pattern '9999 M*** S*' = number + street name + suffix
+    - 399 distinct of 400
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  zip5:
+    description: 5-digit US ZIP code of the contact's address; only 6 distinct values (20001, 20850, 20151,
+      21201, 22033, 22101, in the DC/MD/VA area).
+    pii_category: postal_code
+    sensitivity: confidential
+    confidence: 0.95
+    evidence:
+    - 6 distinct 5-digit values, 61-72 rows each
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  created_ts:
+    description: Timestamp when the contact record was created, between January 2024 and September 2025.
+      Not a personal attribute.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - TIMESTAMP type, 2024-01 to 2025-09, 400 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+  src_sys:
+    description: 'Source CRM system the contact came from: HUBSPOT (204 rows) or SFDC, i.e. Salesforce
+      (196 rows).'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - 'Two enum values: HUBSPOT 204, SFDC 196'
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:19:57+00:00'
+proposed_by: claude (claude-sonnet-5-5)

@@ -1,0 +1,118 @@
+table: raw.orders_ext
+description: 'Raw order extract, one row per order (1500 rows, ord_id 100001–101500). It holds the contact
+  reference, order date, amount with currency (USD/EUR/GBP, not normalised), an SSN-shaped reference code,
+  free-text notes, client IP address and optional promo code. Contains personal data: client IPs and notes
+  that sometimes include emails or phone numbers. ref_code looks like an SSN but appears to be a generated
+  sequential code; this needs confirmation by the owner.'
+description_status: proposed
+columns:
+  ord_id:
+    description: Unique order identifier, one per row (6-digit integers 100001–101500). Primary key of
+      the table.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 1500 distinct values in 1500 rows, contiguous range 100001-101500
+    - No nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  contact_id:
+    description: Internal identifier of the customer/contact who placed the order (values 1–400, 392 distinct,
+      so repeat customers). Presumably a foreign key to a contact table; links orders to a person but
+      carries no direct identity.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.55
+    evidence:
+    - 'Integer 1-400 with 392 distinct values across 1500 rows: repeated per-person key'
+    - Re-identifiable by joining to the contact record; target table not verified
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  ord_dt:
+    description: Date the order was placed (DATE, 562 distinct days, samples within 2025). Use for time-series
+      analysis of orders.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - DATE type, no nulls, masked samples are 2025 dates
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  amt:
+    description: Order amount in the currency given by cur_cd (range 3.64–830.32). Not normalised to a
+      single currency, so do not sum across cur_cd without conversion.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - DOUBLE, no nulls, min 3.64 max 830.32
+    - Paired with cur_cd (USD/EUR/GBP)
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  cur_cd:
+    description: 'ISO 4217 currency code of amt: USD (1100 rows), EUR (251), GBP (149).'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - 3 distinct values, all length 3
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  ref_code:
+    description: Unique per-order reference code formatted like a US SSN (999-99-9999). Evidence indicates
+      it is a generated reference rather than a real SSN, but it should be treated cautiously and confirmed
+      with the data owner.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.6
+    evidence:
+    - ssn_shape detector hits 100%, but unique per row (1500 distinct) while order contact_id repeats,
+      so it is not a per-person identifier
+    - Only 5 distinct first segments and 40 distinct middle segments, whereas the last segment has 1500
+      distinct values with max 1500, i.e. a sequential counter
+    - Real SSNs would not be one-per-order or sequential; no correlation with ord_id
+    - Reviewer should confirm with the source owner; reclassify to government_id if it is real
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  notes:
+    description: Free-text order/customer-service note (e.g. delivery window, gift wrap, backorder). Null
+      for about 37% of rows. Some notes contain email addresses or phone numbers typed by staff.
+    pii_category: free_text_may_contain_pii
+    sensitivity: restricted
+    confidence: 0.9
+    evidence:
+    - Email detector hits 6.0% and phone 5.7% of rows; 57 non-null notes contain '@'
+    - Free-text samples with masked names/words, 117 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  ip_addr:
+    description: IPv4 address of the client that placed the order; one distinct value per order.
+    pii_category: ip_address
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - ipv4 detector hit rate 100%
+    - 1500 distinct values, no nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+  promo_cd:
+    description: 'Promotion code applied to the order: SPRING25, WELCOME10 or VIP. Null (about 41%) when
+      no promotion was used.'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 3 distinct values (309/294/280), 41% null
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:20:36+00:00'
+proposed_by: claude (claude-sonnet-5-5)

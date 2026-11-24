@@ -1,0 +1,118 @@
+table: mart.dim_customer
+description: Customer dimension (one row per contact, 400 rows) built from staging.stg_contacts for analytics.
+  Direct identifiers are hashed or generalised (email hash/domain, birth year and age band, zip3, SSN
+  last-4), but full_name is retained in clear text and ssn_last4 is a partial government ID, so the table
+  should be treated as containing PII with restricted access. Age band is calculated as of 2026-01-01.
+  Records come from HubSpot and Salesforce (SFDC).
+description_status: proposed
+columns:
+  customer_key:
+    description: 'Surrogate key of the customer: MD5 hash of the source contact_id from staging.stg_contacts.
+      Unique per row (400 rows); 32-char hex.'
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.7
+    evidence:
+    - 'SQL: md5(CAST(contact_id AS VARCHAR))'
+    - 400 distinct of 400 rows, length 32
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  full_name:
+    description: Customer's full name (first name and last name concatenated with a space) taken unmodified
+      from the source contact record.
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - 'SQL: first_name || '' '' || last_name'
+    - masked samples show 'Xxxx Xxx' name pattern
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  email_domain:
+    description: Domain part of the customer's email address (e.g. gmail.com, agency.gov); six distinct
+      values. Null (~3.5%) when no email is on record. Local part is dropped.
+    pii_category: quasi_identifier
+    sensitivity: confidential
+    confidence: 0.7
+    evidence:
+    - 'SQL: split_part(email,''@'',2)'
+    - 6 distinct values, 3.5% null
+    - employer-type domains (agency.gov, corp.example.com) can narrow identity in combination
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  email_hash:
+    description: SHA-256 hash (64 hex chars) of the customer's email address, usable for joining/deduplicating
+      without exposing the address. Null (~3.5%) when no email; 386 distinct values among non-null rows,
+      so some emails repeat across customers.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.95
+    evidence:
+    - 'SQL: sha256(s.email)'
+    - length 64, null rate 0.035, 386 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  birth_year:
+    description: Calendar year of the customer's birth (range 1950–2004), derived from the source birth
+      date; the month and day are dropped.
+    pii_category: quasi_identifier
+    sensitivity: confidential
+    confidence: 0.93
+    evidence:
+    - 'SQL: year(birth_date)'
+    - min 1950, max 2004, 55 distinct
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  age_band:
+    description: 'Age band of the customer as of 2026-01-01 (fixed reference date, not the current date):
+      under_30, 30_49 or 50_plus.'
+    pii_category: quasi_identifier
+    sensitivity: confidential
+    confidence: 0.93
+    evidence:
+    - SQL CASE on date_diff('year', birth_date, DATE '2026-01-01')
+    - 3 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  zip3:
+    description: First three digits of the customer's ZIP/postal code (a coarse geographic area); six
+      values observed (200, 201, 208, 212, 220, 221).
+    pii_category: quasi_identifier
+    sensitivity: confidential
+    confidence: 0.9
+    evidence:
+    - 'SQL: left(zip,3)'
+    - 6 distinct values, length 3
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  ssn_last4:
+    description: Last four digits of the customer's US Social Security Number. This is a partial government
+      identifier; not unique (391 distinct across 400 rows) and should be restricted.
+    pii_category: government_id
+    sensitivity: restricted
+    confidence: 0.96
+    evidence:
+    - 'SQL: right(ssn,4)'
+    - length 4, 391 distinct values
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+  source_system:
+    description: 'CRM system the contact record originated from: HUBSPOT (204 rows) or SFDC (196 rows).'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.97
+    evidence:
+    - Enum of 2 values
+    - passed through from staging.stg_contacts
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:22:06+00:00'
+proposed_by: claude (claude-sonnet-5-5)

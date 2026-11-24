@@ -1,0 +1,115 @@
+table: staging.stg_orders
+description: 'Staging model with one row per customer order (1,500 rows), built from raw.orders_ext. It
+  renames columns and converts order amounts to USD using fixed EUR and GBP rates. It includes the contact
+  key, order date, an order reference, the client IP address, an optional promo code and free-text notes.
+  Treat it as personal data: ip_address is an IP address, order_notes can contain emails, phone numbers
+  or names, and contact_id links to a person. order_ref looks like an SSN but is a sequential order reference.'
+description_status: proposed
+columns:
+  order_id:
+    description: Unique order identifier (one row per order); six-digit integer in the range 100001–101500.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - 1500 distinct values over 1500 rows, no nulls
+    - Renamed from raw.orders_ext.ord_id
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  contact_id:
+    description: Identifier of the customer contact who placed the order. It is a foreign-key-style integer
+      (1–400) that repeats across orders, about 392 distinct values. Join to the contact table for details.
+    pii_category: pseudonymized_identifier
+    sensitivity: confidential
+    confidence: 0.6
+    evidence:
+    - 392 distinct values across 1500 rows, range 1-400
+    - Passed through unchanged from raw.orders_ext.contact_id
+    - Internal surrogate key that links orders to a person; it is not personal data on its own
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  order_date:
+    description: Calendar date on which the order was placed. About 562 distinct dates in the data; no
+      nulls.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - DATE type, 0% nulls
+    - Renamed from ord_dt
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  amount_usd:
+    description: Order amount converted to USD. EUR is multiplied by 1.08 and GBP by 1.27, using fixed
+      rates. Any other currency is passed through unconverted and assumed to be USD. Values range from
+      about 3.64 to 830.32 and are not rounded, so some have more than two decimals.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - CASE on cur_cd in the model SQL
+    - min 3.64, max 830.32
+    - Unrounded values such as 32.9292 appear in samples
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  order_ref:
+    description: Order reference code formatted like 999-99-9999. Despite the SSN-like shape, it is a
+      system-generated reference. Its last segment is sequential and equals order_id minus 100000 for
+      all 1500 rows, and the other segments have very low cardinality (5 and 40 distinct values). It is
+      unique per order.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.8
+    evidence:
+    - ssn_shape detector hits 100% of rows, which indicates a format artefact rather than real SSNs
+    - Last segment matches order_id-100000 in 1500 of 1500 rows
+    - First segment has 5 distinct values and the middle segment has 40, which is not what real SSNs would
+      show
+    - Source column is ref_code, with no transformation
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  order_notes:
+    description: Free-text note that staff or customers added to the order, such as delivery window, gift
+      wrap or backorder remarks. About 37% of rows are null. Some notes contain email addresses or phone
+      numbers, and they may also contain customer names.
+    pii_category: free_text_may_contain_pii
+    sensitivity: restricted
+    confidence: 0.92
+    evidence:
+    - Email detector hit rate is 6.0% and phone detector hit rate is 5.7%
+    - 57 rows contain '@'
+    - Samples start with capitalised words that look like names, e.g. 'C******* called about delivery
+      window'
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  ip_address:
+    description: IPv4 address of the client that placed the order. It is unique per order and never null.
+    pii_category: ip_address
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - ipv4 detector hits 100% of rows
+    - 1500 distinct values
+    - Source column is ip_addr
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+  promo_code:
+    description: Promotion code applied to the order. Values are SPRING25, WELCOME10 and VIP. Null (about
+      41% of rows) means no promotion was used.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - '3 distinct values: SPRING25 (309), WELCOME10 (294), VIP (280)'
+    - 41% nulls
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:33+00:00'
+proposed_by: claude (claude-sonnet-5-5)

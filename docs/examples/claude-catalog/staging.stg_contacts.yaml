@@ -1,0 +1,149 @@
+table: staging.stg_contacts
+description: 'Staging table of cleaned CRM contacts from raw.crm_contacts, with one row per contact (400
+  rows, key contact_id). Columns are renamed and typed: names are case-normalised, email is lower-cased,
+  phone is text, and the birth date is parsed from a raw YYYYMMDD string. Records come from HubSpot or
+  Salesforce (source_system). The table holds direct identifiers (name, email, phone, full date of birth,
+  SSN, street address, ZIP) that are not masked or hashed, so restrict access and don''t expose it downstream
+  without masking. Despite the model comment, the SQL does no de-duplication.'
+description_status: proposed
+columns:
+  contact_id:
+    description: Unique CRM contact identifier (one row per contact, values 1–400). Surrogate key passed
+      through from raw.crm_contacts.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.9
+    evidence:
+    - 400 distinct of 400 rows, no nulls
+    - passthrough in model SQL
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:12+00:00'
+  first_name:
+    description: Contact's given name, normalised to capitalised case (first letter upper, rest lower).
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - derived from raw frst_nm via upper/lower
+    - masked samples are name-shaped
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:12+00:00'
+  last_name:
+    description: Contact's family name, normalised to capitalised case.
+    pii_category: person_name
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - derived from raw lst_nm via upper/lower
+    - masked samples are name-shaped
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:12+00:00'
+  email:
+    description: Contact's email address, trimmed and lower-cased. Null for about 3.5% of contacts; a
+      few addresses are shared (386 distinct among non-null rows).
+    pii_category: email
+    sensitivity: restricted
+    confidence: 0.97
+    evidence:
+    - email detector hit rate 1.0
+    - null rate 0.035, 386 distinct
+    - lower(trim(eml_addr))
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:12+00:00'
+  phone:
+    description: Contact's 10-digit phone number, stored as text (cast from the raw numeric ph_num). It
+      has no formatting and no country code.
+    pii_category: phone
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - phone detector hit rate 1.0
+    - length always 10
+    - 400 distinct
+    - CAST(ph_num AS VARCHAR)
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:12+00:00'
+  birth_date:
+    description: Contact's full date of birth. It is parsed from a YYYYMMDD string held in the cryptically
+      named raw column c3.
+    pii_category: date_of_birth
+    sensitivity: restricted
+    confidence: 0.93
+    evidence:
+    - strptime(c3,'%Y%m%d') cast to DATE
+    - 394 distinct values across 400 rows, full-date granularity
+    - sample years range 1951–1999
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+  ssn:
+    description: US Social Security Number (format 999-99-9999) of the contact, passed through unmasked
+      from raw tax_id. Highly sensitive; restrict access.
+    pii_category: government_id
+    sensitivity: restricted
+    confidence: 0.93
+    evidence:
+    - ssn_shape detector hit rate 1.0
+    - 400 distinct values
+    - area segment has 290 distinct values and the serial segment has 391, so they vary and aren't a constant
+      or sequence
+    - no invalid 000/666/9xx area numbers
+    - passthrough of tax_id
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+  street_address:
+    description: First line of the contact's street address (house number and street name).
+    pii_category: street_address
+    sensitivity: restricted
+    confidence: 0.95
+    evidence:
+    - masked samples look like '9999 Main St'
+    - 399 distinct of 400
+    - from raw addr_line1
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+  zip:
+    description: 5-digit US ZIP code of the contact's address. Only 6 values occur (20001, 21201, 22033,
+      20850, 22101, 20151), each covering roughly 15–18% of rows.
+    pii_category: postal_code
+    sensitivity: confidential
+    confidence: 0.9
+    evidence:
+    - length always 5
+    - 6 distinct values
+    - from raw zip5
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+  source_system:
+    description: 'CRM system the contact record came from: HUBSPOT (204 rows) or SFDC (196 rows, Salesforce).'
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.95
+    evidence:
+    - 2 distinct values
+    - from raw src_sys
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+  created_at:
+    description: Timestamp when the contact record was created in the source CRM. Samples fall in 2024–2025.
+      The timezone isn't documented.
+    pii_category: none
+    sensitivity: internal
+    confidence: 0.85
+    evidence:
+    - from raw created_ts
+    - 400 distinct timestamps
+    - sample dates 2024–2025
+    status: proposed
+    proposed_by: claude (claude-sonnet-5-5)
+    updated_at: '2026-11-24T21:21:13+00:00'
+proposed_by: claude (claude-sonnet-5-5)
