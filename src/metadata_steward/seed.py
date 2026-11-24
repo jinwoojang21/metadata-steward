@@ -76,7 +76,7 @@ def seed(path: str | Path, n_contacts: int = 400, n_orders: int = 1500, n_events
             _ssn(rng),                                                       # tax_id
             f"{rng.randint(100, 9999)} {rng.choice(STREETS)}",               # addr_line1
             f"{rng.choice([20151, 22033, 20001, 22101, 20850, 21201]):05d}",  # zip5
-            datetime(2024, 1, 1) + timedelta(minutes=rng.randint(0, 900_000)),  # noqa: DTZ001 naive TIMESTAMP
+            datetime(2024, 1, 1) + timedelta(minutes=rng.randint(0, 900_000)),
             rng.choice(["SFDC", "HUBSPOT"]),
         ))
     con.execute("""CREATE TABLE raw.crm_contacts (contact_id INTEGER, frst_nm VARCHAR, lst_nm VARCHAR,
@@ -116,7 +116,7 @@ def seed(path: str | Path, n_contacts: int = 400, n_orders: int = 1500, n_events
         events.append((
             i, uuid.UUID(int=rng.getrandbits(128)).hex[:16], c[0] if c else None,
             rng.choice(UAS), _ip(rng), rng.choice(PATHS),
-            datetime(2025, 6, 1) + timedelta(seconds=rng.randint(0, 10_000_000)),  # noqa: DTZ001
+            datetime(2025, 6, 1) + timedelta(seconds=rng.randint(0, 10_000_000)),
             str(uuid.UUID(int=rng.getrandbits(128))),
         ))
     con.execute("""CREATE TABLE raw.web_events (evt_id INTEGER, sess_id VARCHAR, contact_id INTEGER,

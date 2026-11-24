@@ -43,7 +43,8 @@ def _raw_pii(warehouse_path) -> set[str]:
     ]:
         for row in con.execute(sql).fetchall():
             vals |= {str(v) for v in row if v}
-    for (note,) in con.execute("SELECT notes FROM raw.orders_ext WHERE notes LIKE '%@%' OR notes LIKE '%555%'").fetchall():
+    notes_sql = "SELECT notes FROM raw.orders_ext WHERE notes LIKE '%@%' OR notes LIKE '%555%'"
+    for (note,) in con.execute(notes_sql).fetchall():
         vals |= set(re.findall(r"[\w.+-]+@[\w.-]+|\(\d{3}\) 555-\d{4}", note))
     con.close()
     return vals

@@ -32,3 +32,7 @@ pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 115
+
+[tool.ruff.lint]
+# Explicit rule set so results don't shift between ruff releases.
+select = ["E", "F", "W", "B", "I", "UP"]

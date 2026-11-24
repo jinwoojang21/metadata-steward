@@ -165,7 +165,8 @@ def format_classification(name: str, rep: ClassificationReport) -> str:
 
 
 def format_qa(results: list[QAResult]) -> str:
-    lines = ["### Lineage Q&A", "", "| question | result | missing | extra | tool calls |", "|---|---|---|---|---|"]
+    lines = ["### Lineage Q&A", "",
+             "| question | result | missing | extra | tool calls |", "|---|---|---|---|---|"]
     for r in results:
         lines.append(f"| {r.id} | {'PASS' if r.correct else 'FAIL'} | {', '.join(r.missing)} | "
                      f"{', '.join(r.extra)} | {r.tool_calls} |")
