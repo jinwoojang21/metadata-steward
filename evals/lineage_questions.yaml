@@ -1,0 +1,33 @@
+# Impact-analysis questions with the exact set of columns a correct answer must name.
+- id: drop_email
+  question: >-
+    We plan to drop raw.crm_contacts.eml_addr. Which columns in the mart schema would break or
+    lose their data? List only mart columns.
+  expected:
+    - mart.dim_customer.email_domain
+    - mart.dim_customer.email_hash
+- id: ssn_flow
+  question: >-
+    Which columns in staging and mart are derived, directly or indirectly, from raw.crm_contacts.tax_id?
+  expected:
+    - staging.stg_contacts.ssn
+    - mart.dim_customer.ssn_last4
+- id: revenue_sources
+  question: >-
+    Which raw source columns feed mart.agg_daily_revenue.revenue_usd?
+  expected:
+    - raw.orders_ext.amt
+    - raw.orders_ext.cur_cd
+- id: dob_exposure
+  question: >-
+    The raw column raw.crm_contacts.c3 turns out to hold dates of birth. Which mart columns are derived
+    from it and therefore need a privacy review?
+  expected:
+    - mart.dim_customer.birth_year
+    - mart.dim_customer.age_band
+- id: notes_leak
+  question: >-
+    Free-text order notes sometimes contain customer emails and phone numbers. Which mart columns carry
+    any information derived from raw.orders_ext.notes?
+  expected:
+    - mart.fct_orders.has_notes

@@ -1,0 +1,93 @@
+# Acceptable PII categories per column. A list means any listed category is correct.
+# `hard:` marks columns where name or shape is misleading. They're reported separately in evals.
+raw.crm_contacts:
+  contact_id: [none, pseudonymized_identifier]
+  frst_nm: [person_name]
+  lst_nm: [person_name]
+  eml_addr: [email]
+  ph_num: [phone]
+  c3: {accept: [date_of_birth], hard: "cryptic name; YYYYMMDD text"}
+  tax_id: [government_id]
+  addr_line1: [street_address]
+  zip5: [postal_code, quasi_identifier]
+  created_ts: [none]
+  src_sys: [none]
+raw.orders_ext:
+  ord_id: [none]
+  contact_id: [none, pseudonymized_identifier]
+  ord_dt: [none]
+  amt: [none]
+  cur_cd: [none]
+  ref_code: {accept: [none], hard: "SSN-shaped order reference: 5 prefixes, sequential suffix"}
+  notes: {accept: [free_text_may_contain_pii], hard: "~8% of rows contain an email or phone"}
+  ip_addr: [ip_address]
+  promo_cd: [none]
+raw.web_events:
+  evt_id: [none]
+  sess_id: [none, pseudonymized_identifier]
+  contact_id: [none, pseudonymized_identifier]
+  ua_str: [none, quasi_identifier]
+  ip: [ip_address]
+  url_path: [none]
+  evt_ts: [none]
+  device_id: [device_id, pseudonymized_identifier]
+raw.hr_employees:
+  emp_id: [none, pseudonymized_identifier]
+  full_name: [person_name]
+  work_email: [email]
+  clearance_lvl: {accept: [sensitive_employment], hard: "no PII pattern, but HR-sensitive"}
+  hire_dt: [none, sensitive_employment]
+  salary_amt: {accept: [sensitive_employment], hard: "plain number, HR-sensitive"}
+  mgr_emp_id: [none, pseudonymized_identifier]
+staging.stg_contacts:
+  contact_id: [none, pseudonymized_identifier]
+  first_name: [person_name]
+  last_name: [person_name]
+  email: [email]
+  phone: [phone]
+  birth_date: [date_of_birth]
+  ssn: [government_id]
+  street_address: [street_address]
+  zip: [postal_code, quasi_identifier]
+  source_system: [none]
+  created_at: [none]
+staging.stg_orders:
+  order_id: [none]
+  contact_id: [none, pseudonymized_identifier]
+  order_date: [none]
+  amount_usd: [none]
+  order_ref: {accept: [none], hard: "SSN-shaped order reference"}
+  order_notes: {accept: [free_text_may_contain_pii], hard: "inherits PII risk from raw notes"}
+  ip_address: [ip_address]
+  promo_code: [none]
+staging.stg_web_sessions:
+  session_id: [none, pseudonymized_identifier]
+  contact_id: [none, pseudonymized_identifier]
+  session_start: [none]
+  session_end: [none]
+  page_views: [none]
+  ip_address: [ip_address]
+  device_id: [device_id, pseudonymized_identifier]
+mart.dim_customer:
+  customer_key: [pseudonymized_identifier, none]
+  full_name: [person_name]
+  email_domain: {accept: [none, quasi_identifier], hard: "named email, but only the domain survives"}
+  email_hash: [pseudonymized_identifier]
+  birth_year: [quasi_identifier, date_of_birth]
+  age_band: [quasi_identifier, none]
+  zip3: [quasi_identifier, postal_code]
+  ssn_last4: [government_id, quasi_identifier]
+  source_system: [none]
+mart.fct_orders:
+  order_id: [none]
+  customer_key: [pseudonymized_identifier, none]
+  order_date: [none]
+  amount_usd: [none]
+  order_ref: {accept: [none], hard: "SSN-shaped order reference"}
+  has_notes: [none]
+  promo_code: [none]
+mart.agg_daily_revenue:
+  order_date: [none]
+  order_count: [none]
+  revenue_usd: [none]
+  unique_customers: [none]

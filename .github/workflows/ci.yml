@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -q
+      - name: Baseline evals
+        run: metadata-steward evals --agent baseline
+
+  claude-evals:
+    # Manual only: spends API credits. Needs the ANTHROPIC_API_KEY repo secret.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Claude evals (PII classification + lineage Q&A)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -o pipefail
+          metadata-steward evals --agent claude --qa --save-catalog claude-catalog --json metrics.json | tee evals.md
+          cat evals.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Export catalog
+        if: always()
+        run: |
+          MS_CATALOG_DIR=claude-catalog metadata-steward export --out CATALOG.md
+          echo "=====BEGIN CATALOG====="; cat CATALOG.md; echo "=====END CATALOG====="
+          for f in claude-catalog/*.yaml; do echo "=====BEGIN $f====="; cat "$f"; echo "=====END $f====="; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: claude-catalog
+          path: |
+            claude-catalog/
+            CATALOG.md
+            metrics.json
