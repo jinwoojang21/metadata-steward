@@ -78,6 +78,9 @@ class Catalog:
                        confidence: float, evidence: list[str], by: str) -> dict[str, Any]:
         if pii_category not in PII_CATEGORIES:
             raise ValueError(f"pii_category must be one of {sorted(PII_CATEGORIES)}")
+        if not isinstance(evidence, list) or not evidence or not all(isinstance(e, str) for e in evidence):
+            # Found in a live eval: a bare string was stored one character per item.
+            raise TypeError("evidence must be a non-empty list of strings")
         if not 0 <= float(confidence) <= 1:
             raise ValueError("confidence must be between 0 and 1")
         e = self.load(table)

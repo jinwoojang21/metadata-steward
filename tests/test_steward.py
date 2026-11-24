@@ -50,6 +50,9 @@ def test_propose_rejects_unknown_column_and_category(settings):
     base = {"description": "d", "confidence": 0.9, "evidence": ["e"]}
     assert tb.call("propose_column", base | {"column": "nope", "pii_category": "email"})[1]
     assert tb.call("propose_column", base | {"column": "emp_id", "pii_category": "secret_sauce"})[1]
+    out, err = tb.call("propose_column", base | {"column": "emp_id", "pii_category": "none",
+                                                 "evidence": "a bare string"})
+    assert err and "list of strings" in out
 
 
 # ------------------------------------------------------------------ fake Claude client
